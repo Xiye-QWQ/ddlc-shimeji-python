@@ -1,0 +1,152 @@
+{
+  "name": "Sayori",
+  "sprite": "sprites/stand.png",
+  "animations": {
+    "idle": {
+      "frames": [
+        "sprites/stand.png",
+        "sprites/stand.png",
+        "sprites/stand.png",
+        "sprites/stand2.png"
+      ],
+      "fps": 2,
+      "loop": true
+    },
+    "walk": {
+      "frames": [
+        "sprites/stand_walk1.png",
+        "sprites/stand_walk2.png"
+      ],
+      "fps": 8,
+      "loop": true,
+      "allow_horizontal": true
+    },
+    "fall": {
+      "frames": [
+        "sprites/air.png"
+      ],
+      "fps": 8,
+      "loop": true
+    },
+    "drag": {
+      "frames": [
+        "sprites/air_swing_l.png",
+        "sprites/air.png",
+        "sprites/air_swing_r.png",
+        "sprites/air.png"
+      ],
+      "fps": 5,
+      "loop": true
+    },
+    "sit": {
+      "frames": [
+        "sprites/sit_down.png"
+      ],
+      "fps": 1,
+      "loop": true
+    },
+    "landing": {
+      "frames": [
+        "sprites/sit_down.png",
+        "sprites/sit_up.png"
+      ],
+      "fps": 5,
+      "loop": false
+    },
+    "sleep": {
+      "frames": [
+        "sprites/sleep1.png",
+        "sprites/sleep2.png",
+        "sprites/sleep2.png",
+        "sprites/sleep3.png"
+      ],
+      "fps": 2,
+      "loop": true
+    },
+    "crawl": {
+      "frames": [
+        "sprites/stand_walk1.png",
+        "sprites/stand_walk2.png"
+      ],
+      "fps": 4,
+      "loop": true,
+      "allow_horizontal": true
+    },
+    "hop": {
+      "frames": [
+        "sprites/hop1.png",
+        "sprites/hop2.png",
+        "sprites/jump_1.png",
+        "sprites/jump_2.png",
+        "sprites/jump_3.png"
+      ],
+      "fps": 12,
+      "loop": false
+    },
+    "look_around": {
+      "frames": [
+        "sprites/stand.png",
+        "sprites/stand.png",
+        "sprites/stand2.png",
+        "sprites/stand.png"
+      ],
+      "fps": 3,
+      "loop": true
+    }
+  },
+  "physics": {
+    "gravity": 2400.0,
+    "max_fall_speed": 1300.0,
+    "throw_strength": 0.85,
+    "max_throw_speed": 1250.0,
+    "air_drag": 0.65,
+    "ground_friction": 12.0
+  },
+  "spawn_height": 220,
+  "behaviors": {
+    "walk_speed": 65,
+    "idle_duration": [
+      2,
+      5
+    ],
+    "walk_duration": [
+      2,
+      5
+    ],
+    "sit_duration": [
+      3,
+      6
+    ],
+    "choices": {
+      "walk": 5,
+      "sit": 3,
+      "sleep": 1,
+      "crawl": 2,
+      "hop": 2,
+      "look_around": 3
+    },
+    "cooldowns": {
+      "walk": 4,
+      "sit": 10,
+      "sleep": 35,
+      "crawl": 12,
+      "hop": 10,
+      "look_around": 8
+    },
+    "crawl_speed": 25,
+    "hop_speed": 480,
+    "sleep_duration": [
+      8,
+      14
+    ],
+    "crawl_duration": [
+      2,
+      4
+    ],
+    "look_around_duration": [
+      3,
+      5
+    ]
+  },
+  "sprite_facing": "left"
+}

@@ -1,0 +1,13 @@
+{
+  "character": "monika",
+  "update_interval_ms": 16,
+  "action_speed": "normal",
+  "starting_behavior": "random",
+  "throwing": true,
+  "physics_feel": "normal",
+  "always_on_top": true,
+  "start_position": "random",
+  "animation_speed": "normal",
+  "autonomous": true,
+  "window_interaction": true
+}
