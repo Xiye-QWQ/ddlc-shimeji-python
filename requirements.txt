@@ -1,1 +1,3 @@
+# Dependencies for running or building from Python source.
+# The packaged Windows executable includes these; users do not install them.
 PySide6>=6.8,<7

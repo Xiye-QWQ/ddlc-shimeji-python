@@ -7,6 +7,16 @@ or JAR dependency.
 
 ## Download and run on Windows
 
+### Requirements for the executable
+
+- Windows.
+- The extracted `DDLCMascot` folder, containing both `DDLCMascot.exe` and `_internal`.
+- A writable location so the app can save your settings.
+
+**You do not need to install Python, pip, PySide6, or anything from
+`requirements.txt` to use the executable.** The download includes its runtime
+and libraries.
+
 **[Download DDLCMascot.zip](https://github.com/flysandwichNOTFOUND/ddlc-shimeji-python/releases/latest/download/DDLCMascot.zip)**
 or browse the [release notes](https://github.com/flysandwichNOTFOUND/ddlc-shimeji-python/releases).
 
@@ -35,7 +45,9 @@ Right-click **Quit** or press **Esc** while a mascot has focus to exit all masco
 
 ## Run from Python source
 
-Requires Python 3.10 or newer. Run these commands from the repository folder:
+This section is for developers running the `.py` files. Only source users need
+Python 3.10 or newer and the dependencies listed in `requirements.txt`.
+Run these commands from the repository folder:
 
 ```powershell
 py -m venv .venv
