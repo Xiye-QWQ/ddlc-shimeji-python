@@ -131,7 +131,7 @@ class Mascot(QWidget):
         previous = self.display
         self.display = self.desktop.resolve(self.display, self.physics, self.width(), self.height())
         self.screen_area = self.display.available
-        if self.display != previous:
+        if self.display != previous and previous not in self.desktop.displays:
             self.support = None
 
     def horizontal_bounds(self):
@@ -142,14 +142,16 @@ class Mascot(QWidget):
         if self.support is not None:
             self.support = self.window_surfaces.follow(self.support, self.display, self.physics,
                                                        self.width(), self.height())
+            if self.support is not None:
+                self.display = next(d for d in self.desktop.displays if d.name == self.support.display)
+                self.screen_area = self.display.available
 
     def tick(self) -> None:
         now = time.monotonic()
         # Cap stalled event-loop steps so debugger pauses cannot teleport us.
         dt = min(max(now - self._last_update, 0.0), 0.1)
         self._last_update = now
-        old_x = self.physics.x
-        starting_display = self.display
+        old_native_x, _ = self.display.to_native(self.physics.x + self.width() / 2, self.physics.y)
         if not self.behaviors.dragging:
             # Revalidate changed/unplugged screens without cancelling an upward
             # throw at the floor before its first integration step.
@@ -161,21 +163,21 @@ class Mascot(QWidget):
         self.animation.update(dt)
         horizontal_motion = 0.0
         if not self.behaviors.dragging:
-            previous_bottom = self.physics.y + self.height()
-            previous_display = self.display
+            previous_foot = self.display.to_native(self.physics.x + self.width() / 2,
+                                                   self.physics.y + self.height())
             # Hop/throw immediately detaches from a window platform.
             if self.physics.vy < 0:
                 self.support = None
             self.physics.update(dt)
             self.resolve_collisions()
             self.update_support()
-            if self.window_interaction and self.support is None and self.display == previous_display:
+            if self.window_interaction and self.support is None:
+                _, previous_bottom = self.display.from_native(*previous_foot)
                 self.support = self.window_surfaces.land(self.display, self.physics, previous_bottom,
                                                         self.width(), self.height())
-            horizontal_motion = self.physics.x - old_x
-            if self.display != starting_display:
-                # Coordinate conversion across DPI seams is not a direction change.
-                horizontal_motion = self.physics.vx
+            native_x, _ = self.display.to_native(self.physics.x + self.width() / 2, self.physics.y)
+            # Physical displacement also covers window carries across DPI seams.
+            horizontal_motion = native_x - old_native_x
             self.move(round(self.physics.x), round(self.physics.y))
             # Keep throw momentum through landing; return to idle after friction settles it.
             if self.physics.settled and isinstance(self.current_behavior, FallBehavior):

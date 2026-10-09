@@ -13,7 +13,8 @@ class WindowSurface:
     left: float
     right: float
     top: float
-    origin_x: float
+    native_rect: tuple[int, int, int, int]
+    occluders: tuple[tuple[int, int, int, int], ...]
 
 
 class WindowSurfaces:
@@ -27,7 +28,7 @@ class WindowSurfaces:
         now = time.monotonic()
         if not force and now < self._next_poll:
             return
-        self._next_poll = now + .2
+        self._next_poll = now + .05
         surfaces, above = [], []
         for window in self.provider():
             left, top, right, bottom = window.rect
@@ -44,32 +45,68 @@ class WindowSurfaces:
                 if not work_top <= top < work_bottom:
                     continue
                 for l, r in segments:
-                    l, r = max(l, work_left), min(r, work_right)
-                    if r <= l:
+                    if min(r, work_right) <= max(l, work_left):
                         continue
+                    # Keep the complete edge: a sprite may straddle an open
+                    # monitor seam while its center belongs to this display.
                     x, y = display.from_native(l, top)
                     end, _ = display.from_native(r, top)
-                    origin, _ = display.from_native(left, top)
-                    surfaces.append(WindowSurface(window.handle, display.name, x, end, y, origin))
+                    surfaces.append(WindowSurface(window.handle, display.name, x, end, y,
+                                                  window.rect, tuple(above)))
             above.append(window.rect)
         self.surfaces = surfaces
 
-    @staticmethod
-    def fits(surface, display, x, width, height):
-        return (surface.display == display.name and surface.left <= x
-                and x + width <= surface.right and surface.top - height >= display.available.y())
+    def fits(self, surface, display, x, width, height):
+        area = display.available
+        y = surface.top - height
+        if not (surface.display == display.name and surface.left <= x
+                and x + width <= surface.right and y >= area.y()
+                and area.x() <= x + width / 2 < area.x() + area.width()):
+            return False
+        for outside, side in ((x < area.x(), "left"),
+                              (x + width > area.x() + area.width(), "right")):
+            if outside and self.desktop.neighbor(display, side, x, y, width, height) is None:
+                return False
+        left, top = display.to_native(x, y)
+        right, bottom = display.to_native(x + width, surface.top)
+        # An edge can be exposed while another window covers the sprite above it.
+        return not any(left < r and right > l and top < b and bottom > t
+                       for l, t, r, b in surface.occluders)
 
     def follow(self, support, display, physics, width, height):
-        """Carry a resting mascot with its window; release missing/covered supports."""
+        """Carry across displays and resizes; release missing or unsafe supports.
+
+        The caller adopts the returned surface's display after coordinates change.
+        Resizing preserves the center's fraction across the full window width;
+        walking on an unchanged window remains free to leave its edge.
+        """
         self.refresh()
         if support is None or physics.vy < 0:
             return None
+        center, _ = display.to_native(physics.x + width / 2, physics.y + height)
+        old_left, _, old_right, _ = support.native_rect
+        fraction = (center - old_left) / (old_right - old_left)
         for surface in self.surfaces:
-            if surface.handle != support.handle or surface.display != display.name:
+            if surface.handle != support.handle:
                 continue
-            x = physics.x + surface.origin_x - support.origin_x
-            if self.fits(surface, display, x, width, height):
+            target = next((d for d in self.desktop.displays if d.name == surface.display), None)
+            if target is None:
+                continue
+            left, top, right, _ = surface.native_rect
+            resized = right - left != old_right - old_left
+            native_center = left + fraction * (right - left)
+            if resized:
+                half_width = width * target.scale[0] / 2
+                if right - left < 2 * half_width:
+                    continue
+                native_center = min(max(native_center, left + half_width), right - half_width)
+            x, _ = target.from_native(native_center, top)
+            x -= width / 2
+            if self.fits(surface, target, x, width, height):
                 physics.x, physics.y = x, surface.top - height
+                if target != display:
+                    physics.vx *= display.scale[0] / target.scale[0]
+                    physics.vx = max(-physics.max_throw_speed, min(physics.max_throw_speed, physics.vx))
                 physics.grounded = True
                 physics.vy = 0.0
                 return surface

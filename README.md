@@ -1,20 +1,54 @@
-# Python desktop mascots
+# DDLC Desktop Mascots
 
-This directory is the `ddlc_shimeji` project root. A fresh Python/PySide6
-implementation, with no Java or JAR dependency. Requires Python 3.10 or newer.
+A Python/PySide6 desktop mascot engine featuring Monika, Yuri, Natsuki, and
+Sayori. Run several independent mascots together, drag and throw them, and let
+them animate and choose actions. This is a fresh implementation with no Java
+or JAR dependency.
 
-## Run on Windows
+## Download and run on Windows
+
+**[Download DDLCMascot.zip](https://github.com/flysandwichNOTFOUND/ddlc-shimeji-python/releases/latest/download/DDLCMascot.zip)**
+or browse the [release notes](https://github.com/flysandwichNOTFOUND/ddlc-shimeji-python/releases).
+
+1. Extract the ZIP to a writable location such as Documents.
+2. Open the extracted `DDLCMascot` folder and run `DDLCMascot.exe`.
+3. Choose a character and settings, then press **Start**.
+4. Right-click a mascot and choose **Spawn another mascot**, or use the system
+   tray's **Spawn mascot** menu to run additional characters at the same time.
+
+Python and the original source files are not required for the Windows download.
+Keep the executable and its `_internal` folder together:
+
+```text
+DDLCMascot/
+├── DDLCMascot.exe
+└── _internal/
+    ├── characters/
+    ├── config/settings.json
+    └── supporting libraries...
+```
+
+Run the application after extracting it, rather than from inside the ZIP.
+The portable build saves choices in `_internal/config/settings.json`; keep this
+folder writable and back up that file before replacing the folder with an update.
+Right-click **Quit** or press **Esc** while a mascot has focus to exit all mascots.
+
+## Run from Python source
+
+Requires Python 3.10 or newer. Run these commands from the repository folder:
 
 ```powershell
 py -m venv .venv
+.\.venv\Scripts\python.exe -m ensurepip --upgrade
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe main.py
 ```
 
 The compact startup menu selects a character and session options. Press Start
 to launch or Quit to exit. Monika, Yuri, Natsuki, and Sayori share one engine;
-each character's JSON maps the supplied artwork to animation states. Original
-source artwork remains in `temp pics`.
+each character's JSON maps the supplied artwork to animation states. Runtime
+artwork lives in `characters/<name>/sprites`; the app does not need a `temp pics`
+folder.
 
 Use `main.py --character yuri` to preselect a character in the menu.
 Launcher choices are saved to `config/settings.json` when Start is pressed and
@@ -49,6 +83,30 @@ Removing the last mascot leaves the tray available for respawning. Quit or Esc
 exits the entire application. If a system tray is unavailable, removing the last
 mascot exits. Startup with Windows is not enabled.
 
+## Build the Windows executable
+
+After installing the source requirements, install PyInstaller and use the
+included build specification on Windows:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install pyinstaller
+.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean DDLCMascot.spec
+```
+
+The result is `dist/DDLCMascot/DDLCMascot.exe`. The specification includes all
+four characters, their configuration files, and the default settings. Zip the
+complete output folder to share it:
+
+```powershell
+Compress-Archive -Path .\dist\DDLCMascot -DestinationPath .\dist\DDLCMascot.zip -Force
+```
+
+The distributed build uses PyInstaller 6.22.3 and Python 3.12. Build output and
+ZIPs are excluded from Git; downloadable bundles are attached to GitHub Releases.
+Rebuild after changing source files to include those changes in the executable.
+Keep the one-folder build for now: the current settings location would be
+temporary in a `--onefile` build.
+
 ## Structure
 
 - `ui/launcher.py`: user-facing startup menu.
@@ -59,6 +117,8 @@ mascot exits. Startup with Windows is not enabled.
 - `core/animation.py`: ordered PNG playback with elapsed time.
 - `core/physics.py`: gravity, throws, drag/friction, and collision resolution.
 - `core/screen.py`: usable desktop geometry and initial positions.
+- `platforms/`: Windows window detection and experimental support surfaces.
+- `DDLCMascot.spec`: reproducible PyInstaller entry point and asset mappings.
 - `behaviors/`: shared idle, walk, sit, sleep, crawl, hop, look-around,
   drag, fall, and recovery transitions.
 - `characters/`: per-character JSON and sprites.
@@ -88,14 +148,28 @@ Changing or disconnecting a display returns affected mascots to a usable area.
 Enable **Window tops (experimental)** in the launcher or saved defaults to land
 and walk on visible normal Windows application windows. It defaults to off and
 is saved as `window_interaction` in settings JSON. Mascots pass upward through
-these surfaces. Moving a supporting window carries the mascot; hiding, minimizing,
-closing, covering, or walking off it releases the mascot to gravity. Window tops
-too narrow for the sprite or too close to the screen ceiling are ignored.
+these surfaces. Moving a supporting window carries the mascot between monitors,
+including across different DPI scales. Resizing preserves the mascot's relative
+horizontal position on the window, as long as there is room for the sprite.
+Mascots can also walk across a window spanning an adjoining monitor seam.
+
+Hiding, minimizing, closing, covering, or walking off a supporting window releases
+the mascot to gravity. Both the supporting edge and the space occupied by the
+mascot must be clear of windows in front. Tops too narrow for the sprite or too
+close to the screen ceiling are ignored. Maximizing usually removes that
+headroom, so the mascot falls from its last valid position instead of jumping
+to the ceiling. Restoring a window makes it available for normal landings again.
 
 `platforms/windows.py` performs read-only Win32 detection; shared
 `platforms/window_surfaces.py` polls and resolves one-way surfaces independently
-of `core/physics.py`. Detection runs at most five times per second. This is
+of `core/physics.py`. Detection runs at most twenty times per second, shared by
+all mascots with window interaction enabled. This is
 approximate rectangular window detection: rounded corners, transparent windows,
-full-screen games, and rapidly moving windows may not behave precisely. Moving a
-supporting window to another monitor releases the mascot rather than carrying
-it across the display seam. On other platforms, window surfaces are unavailable.
+full-screen games, and rapidly moving windows may not behave precisely. A window
+moved completely off usable desktop space releases its mascot at the last safe
+position. On other platforms, window surfaces are unavailable.
+
+Real Windows resize, overlap, maximize/restore, minimize, and close transitions
+have been checked. Mixed-DPI monitor carries and walking across a spanning
+window have been checked with simulated layouts for all four characters;
+physical multi-monitor testing is still outstanding.
